@@ -1,18 +1,19 @@
 
-from sklearn.datasets import load_iris
+from sklearn.datasets import load_wine
 from sklearn import tree
 from sklearn.model_selection import KFold
 from sklearn.ensemble import RandomForestClassifier, HistGradientBoostingClassifier
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, KFold
 import joblib
+import plotly
 
 
 ### This code shows how to use KFold to do cross_validation.
 ### This is just one of many ways to manage training and test sets in sklearn.
 
-iris = load_iris()
-X, y = iris.data, iris.target
+wine = load_wine() #more complex
+X, y = wine.data, wine.target
 scores = []
 kf = KFold(n_splits=5)
 for train_index, test_index in kf.split(X) :
@@ -42,10 +43,10 @@ models = {
     ),
 }
 param_grids = {
-    "Random Forest": {"n_estimators": [10, 20, 50, 100]},
-    "Hist Gradient Boosting": {"max_iter": [10, 20, 50, 100, 300, 500]},
+    "Random Forest": {"n_estimators": [5, 10, 15, 20]},
+    "Hist Gradient Boosting": {"max_iter": [25, 50, 75, 100]},
 }
-cv = KFold(n_splits=2, shuffle=True, random_state=0)
+cv = KFold(n_splits=5, shuffle=True, random_state=0)
 
 results = []
 for name, model in models.items():

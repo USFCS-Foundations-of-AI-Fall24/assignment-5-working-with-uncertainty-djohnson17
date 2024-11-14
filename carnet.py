@@ -1,10 +1,13 @@
 from pgmpy.models import BayesianNetwork
 from pgmpy.inference import VariableElimination
+from torch.autograd import variable
+from torch.fx.experimental.unification import variables
 
 car_model = BayesianNetwork(
     [
         ("Battery", "Radio"),
         ("Battery", "Ignition"),
+        ("KeyPresent","Starts"),
         ("Ignition","Starts"),
         ("Gas","Starts"),
         ("Starts","Moves")
@@ -45,10 +48,10 @@ cpd_ignition = TabularCPD(
 cpd_starts = TabularCPD(
     variable="Starts",
     variable_card=2,
-    values=[[0.95, 0.05, 0.05, 0.001], [0.05, 0.95, 0.95, 0.9999]],
-    evidence=["Ignition", "Gas"],
-    evidence_card=[2, 2],
-    state_names={"Starts":['yes','no'], "Ignition":["Works", "Doesn't work"], "Gas":['Full',"Empty"]},
+    values=[[0.99, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01], [0.01, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99, 0.99]],
+    evidence=["Ignition", "Gas", "KeyPresent"],
+    evidence_card=[2, 2, 2],
+    state_names={"Starts":['yes','no'], "Ignition":["Works", "Doesn't work"], "Gas":['Full',"Empty"], "KeyPresent":["yes","no"]},
 )
 
 cpd_moves = TabularCPD(
@@ -60,12 +63,30 @@ cpd_moves = TabularCPD(
                  "Starts": ['yes', 'no'] }
 )
 
+cpd_key = TabularCPD(
+    variable="KeyPresent",variable_card=2,values=[[0.70],[0.30]],
+    state_names={"KeyPresent":["yes","no"]}
+)
+
 
 # Associating the parameters with the model structure
-car_model.add_cpds( cpd_starts, cpd_ignition, cpd_gas, cpd_radio, cpd_battery, cpd_moves)
+car_model.add_cpds( cpd_starts, cpd_ignition, cpd_gas, cpd_radio, cpd_battery, cpd_moves, cpd_key)
 
 car_infer = VariableElimination(car_model)
 
-print(car_infer.query(variables=["Moves"],evidence={"Radio":"turns on", "Starts":"yes"}))
 
+if __name__ == "__main__":
+    print(car_infer.query(variables=["Moves"],evidence={"Radio":"turns on", "Starts":"yes"}))
+    print("\n")
+    print(car_infer.query(variables=["Battery"],evidence={"Moves":"no"}))
+    print("\n")
+    print(car_infer.query(variables=["Starts"],evidence={"Radio":"Doesn't turn on"}))
+    print("\n")
+    print(car_infer.query(variables=["Radio"],evidence={"Battery":"Works","Gas":"Full"}))
+    print("\n")
+    print(car_infer.query(variables=["Ignition"],evidence={"Moves":"no","Gas":"Empty"}))
+    print("\n")
+    print(car_infer.query(variables=["Starts"],evidence={"Radio":"turns on","Gas":"Full"}))
+    print("\n")
+    print(car_infer.query(variables=["KeyPresent"],evidence={"Moves":"no"}))
 
